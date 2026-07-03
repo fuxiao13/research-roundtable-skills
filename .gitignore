@@ -1,0 +1,5 @@
+.roundtable/
+.research-roundtable/
+*.log
+.DS_Store
+Thumbs.db
