@@ -14,7 +14,7 @@ param(
 
     [string]$KimiHome,
 
-    [ValidateSet('Lean', 'Standard', 'Thorough')]
+    [ValidateSet('Lean', 'Standard')]
     [string]$Mode = 'Lean',
 
     [ValidateRange(0, 1000000)]
@@ -40,20 +40,12 @@ $modeSettings = @{
     Lean = @{
         InputLimit = 16000
         OutputLimit = 100000
-        Findings = 8
-        ChineseCharacters = 1400
+        ReviewInstruction = 'LEAN MODE: Report only MUST_FIX findings. A finding is MUST_FIX only when leaving it unresolved would invalidate the objective, evidence, feasibility, safety, or claimed conclusion. Omit recommendations and optional improvements. If there is no MUST_FIX finding, output only NO_MATERIAL_CHANGE.'
     }
     Standard = @{
         InputLimit = 24000
         OutputLimit = 100000
-        Findings = 12
-        ChineseCharacters = 2400
-    }
-    Thorough = @{
-        InputLimit = 24000
-        OutputLimit = 100000
-        Findings = 20
-        ChineseCharacters = 4000
+        ReviewInstruction = 'STANDARD MODE: Report all MUST_FIX findings and all RECOMMENDED improvements that materially strengthen rigor, clarity, efficiency, or reproducibility. Label every finding as MUST_FIX or RECOMMENDED. Do not omit substance for brevity.'
     }
 }
 $settings = $modeSettings[$Mode]
@@ -165,7 +157,7 @@ $ideas = if ($UserIdeasPath) {
 
 $kimiPrompt = Read-Utf8File -Path (Join-Path $skillRoot 'references\kimi-reviewer.txt') -Label 'Kimi reviewer prompt'
 $deepseekPrompt = Read-Utf8File -Path (Join-Path $skillRoot 'references\deepseek-reviewer.txt') -Label 'DeepSeek reviewer prompt'
-$budgetInstruction = "Soft budget: aim for about $($settings.Findings) concise findings and $($settings.ChineseCharacters) Chinese characters. Include every material issue even if this target is exceeded. Compress repetition and exposition, not substance."
+$reviewInstruction = $settings.ReviewInstruction
 
 $material = @"
 ===== REVIEW PACKET =====
@@ -222,8 +214,8 @@ $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $reviewDirectory = Join-Path $outputRootFull $timestamp
 New-Item -ItemType Directory -Path $reviewDirectory -Force | Out-Null
 
-$kimiInput = $kimiPrompt + "`r`n`r`n" + $budgetInstruction + "`r`n`r`n" + $material
-$deepseekInput = $deepseekPrompt + "`r`n`r`n" + $budgetInstruction + "`r`n`r`n" + $material
+$kimiInput = $kimiPrompt + "`r`n`r`n" + $reviewInstruction + "`r`n`r`n" + $material
+$deepseekInput = $deepseekPrompt + "`r`n`r`n" + $reviewInstruction + "`r`n`r`n" + $material
 
 $kimiReview = if (-not $SkipKimi) {
     Write-Host 'Running the isolated Kimi Code review...'
