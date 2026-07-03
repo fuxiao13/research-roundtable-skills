@@ -24,12 +24,15 @@ stress-tests evidence, statistics, and hidden assumptions.
 
 ## Modes
 
-- `Lean` (default): routine iterations; soft target of 8 concise findings.
-- `Standard`: important design or experimental decisions; soft target of 12 findings.
-- `Thorough`: high-risk or final-gate review; no practical finding cap within the safe input limit.
+- `Lean` (default): lightweight gate. Report only issues that must be fixed
+  because they invalidate the goal, evidence, feasibility, safety, or claimed
+  conclusion. Return `NO_MATERIAL_CHANGE` when no must-fix issue exists.
+- `Standard`: normal review. Report every must-fix issue plus recommended
+  improvements that materially strengthen rigor, clarity, efficiency, or
+  reproducibility. Label the two levels explicitly.
 
-These are compression targets, not content caps. Always retain every material
-finding; reduce repetition and exposition first.
+Classify by decision impact, not by finding count. Never omit a must-fix issue
+to meet a length target.
 
 ## Run
 
