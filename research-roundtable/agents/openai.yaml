@@ -1,0 +1,4 @@
+interface:
+  display_name: "研究圆桌会议"
+  short_description: "让 Codex 主持 Kimi 与 DeepSeek 只读评审"
+  default_prompt: "Use $research-roundtable to review this project result with Kimi and DeepSeek, adjudicate their advice, and let only Codex apply accepted changes."
