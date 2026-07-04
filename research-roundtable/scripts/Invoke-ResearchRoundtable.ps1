@@ -1,6 +1,10 @@
 [CmdletBinding()]
 param(
     [Parameter(Mandatory)]
+    [ValidateSet('Plan', 'Experiment')]
+    [string]$ReviewType,
+
+    [Parameter(Mandatory)]
     [string]$ReviewPacketPath,
 
     [Parameter(Mandatory)]
@@ -38,22 +42,36 @@ if ($SkipKimi -and $SkipDeepSeek) {
 
 $modeSettings = @{
     Lean = @{
-        InputLimit = 16000
         OutputLimit = 100000
         ReviewInstruction = 'LEAN MODE: Report only MUST_FIX findings. A finding is MUST_FIX only when leaving it unresolved would invalidate the objective, evidence, feasibility, safety, or claimed conclusion. Omit recommendations and optional improvements. If there is no MUST_FIX finding, output only NO_MATERIAL_CHANGE.'
     }
     Standard = @{
-        InputLimit = 24000
         OutputLimit = 100000
         ReviewInstruction = 'STANDARD MODE: Report all MUST_FIX findings and all RECOMMENDED improvements that materially strengthen rigor, clarity, efficiency, or reproducibility. Label every finding as MUST_FIX or RECOMMENDED. Do not omit substance for brevity.'
     }
 }
 $settings = $modeSettings[$Mode]
+$inputLimits = @{
+    Plan = @{
+        Lean = 8000
+        Standard = 16000
+    }
+    Experiment = @{
+        Lean = 10000
+        Standard = 18000
+    }
+}
 if ($MaximumInputCharacters -eq 0) {
-    $MaximumInputCharacters = $settings.InputLimit
+    $MaximumInputCharacters = $inputLimits[$ReviewType][$Mode]
 }
 if ($MaximumReviewCharacters -eq 0) {
     $MaximumReviewCharacters = $settings.OutputLimit
+}
+
+$typeInstruction = if ($ReviewType -eq 'Plan') {
+    'PLAN REVIEW: Recheck Codex suggestions against the research objective, constraints, internal logic, feasibility, and required evidence. Review every cited [CX#] item and add only high-value omissions as NEW. Do not rewrite the full plan.'
+} else {
+    'EXPERIMENT REVIEW: Recheck whether the observed evidence supports Codex diagnosis and whether each [CX#] next step is justified by the research plan and acceptance criteria. Check reproducibility, leakage, metric validity, failure causes, and verification design. Add omissions as NEW.'
 }
 
 function Read-Utf8File {
@@ -160,6 +178,9 @@ $deepseekPrompt = Read-Utf8File -Path (Join-Path $skillRoot 'references\deepseek
 $reviewInstruction = $settings.ReviewInstruction
 
 $material = @"
+===== REVIEW TYPE =====
+$ReviewType
+
 ===== REVIEW PACKET =====
 $packet
 
@@ -200,7 +221,10 @@ $sandboxRoot = Join-Path $dataRootFull 'sandbox'
 
 if ($ValidateOnly) {
     Write-Output 'Roundtable validation passed.'
+    Write-Output "Review type: $ReviewType"
+    Write-Output "Mode: $Mode"
     Write-Output "Input characters: $($material.Length)"
+    Write-Output "Input limit: $MaximumInputCharacters"
     Write-Output "Kimi command: $kimiCommand"
     Write-Output "Claude Code command: $claudeCommand"
     Write-Output "Data root: $dataRootFull"
@@ -214,8 +238,8 @@ $timestamp = Get-Date -Format 'yyyyMMdd-HHmmss'
 $reviewDirectory = Join-Path $outputRootFull $timestamp
 New-Item -ItemType Directory -Path $reviewDirectory -Force | Out-Null
 
-$kimiInput = $kimiPrompt + "`r`n`r`n" + $reviewInstruction + "`r`n`r`n" + $material
-$deepseekInput = $deepseekPrompt + "`r`n`r`n" + $reviewInstruction + "`r`n`r`n" + $material
+$kimiInput = $kimiPrompt + "`r`n`r`n" + $typeInstruction + "`r`n" + $reviewInstruction + "`r`n`r`n" + $material
+$deepseekInput = $deepseekPrompt + "`r`n`r`n" + $typeInstruction + "`r`n" + $reviewInstruction + "`r`n`r`n" + $material
 
 $kimiReview = if (-not $SkipKimi) {
     Write-Host 'Running the isolated Kimi Code review...'
