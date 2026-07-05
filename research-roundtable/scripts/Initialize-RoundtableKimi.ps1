@@ -21,3 +21,4 @@ if ($LASTEXITCODE -ne 0) {
 }
 
 Write-Host 'Kimi Code dedicated cache is ready.'
+

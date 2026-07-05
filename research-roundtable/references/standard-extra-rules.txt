@@ -1,0 +1,1 @@
+Standard audit: include every MUST_FIX and material RECOMMENDED item; check cross-field contradictions, missing controls, reproducibility, and research viability. Do not cap valid findings.

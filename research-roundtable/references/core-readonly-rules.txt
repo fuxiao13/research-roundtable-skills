@@ -1,0 +1,1 @@
+Use only the supplied review packet. Do not inspect other files or directories, run commands, call tools/MCP/skills/agents, or modify anything. Return advice to Codex only.

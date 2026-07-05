@@ -1,4 +1,4 @@
 interface:
   display_name: "研究圆桌会议"
-  short_description: "复核研究方案或实验结果，只由 Codex 执行修改"
-  default_prompt: "Use $research-roundtable to review my research plan or experiment result with Kimi and DeepSeek, then let Codex adjudicate and apply accepted changes."
+  short_description: "省额度、可追踪的科研圆桌审查"
+  default_prompt: "Use $research-roundtable with the appropriate BudgetLean, Lean, or Standard mode and Full or Diff scope; use caches and normalized JSONL safely, then stop at the authorization gate."

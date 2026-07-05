@@ -1,126 +1,161 @@
 ---
 name: research-roundtable
-description: Run a Codex-led research review loop in which Codex is the sole executor and editor while Kimi Code and DeepSeek through Claude Code independently review Codex's proposal advice or experiment diagnosis. Use when the user gives Codex a research plan for revision, asks Codex to run programs or experiments against a plan, wants Kimi and DeepSeek to recheck Codex's conclusions, or wants Codex to adjudicate multi-model feedback before applying changes.
+description: Run a cost-controlled, traceable Codex-led roundtable for research plans, procedures, and executed experiments. Supports BudgetLean, Lean, Standard, Full/Diff scope, preflight blocking, exact review and isolation caches, focused packets, JSONL findings, issue ledgers, manifests, and authorization gates. Codex remains sole executor and adjudicator; Kimi and DeepSeek are read-only reviewers.
 ---
 
 # Research Roundtable
 
-Keep Codex as the only executor, adjudicator, and file editor. Give Kimi and
-DeepSeek only a compact text packet; never give them source paths or edit tools.
+Keep Codex as sole executor, adjudicator, and potential editor. Treat Kimi and
+DeepSeek as read-only reviewers. Never let them inspect project files, run
+project commands, or apply changes.
 
-## Route the task
+## Select one workflow
 
-Choose exactly one workflow:
+- `Plan`: review research questions, novelty, falsifiability, baselines,
+  leakage, ablations, statistics, validation, constraints, and publication
+  viability. Do not execute or edit.
+- `Procedure`: decide whether an experiment procedure is directly executable.
+  Review ordering, frozen parameters, records, reproducibility, safety,
+  leakage, stop conditions, and fallback paths. Do not execute or edit.
+- `Experiment`: Codex executes and debugs an authorized experiment, then sends
+  only its compact execution record and evidence to reviewers.
 
-- `Plan`: the user provides a research plan or idea and wants revision advice.
-- `Experiment`: Codex runs a program or experiment against a research plan and
-  wants the outputs and diagnosis independently rechecked.
+Use the matching packet template in `references/`. Add concise source anchors
+such as `[S1]`, `[S2]`; keep each factual claim, constraint, metric, or decision
+traceable. Reviewers may retain an unanchored finding, but Codex must give it
+less weight until verified against the packet.
 
-## Plan workflow
+## Run the review
 
-1. Read the original plan and the user's intent.
-2. Write Codex's independent suggestions first. Assign stable IDs: `[CX1]`,
-   `[CX2]`, and so on. Do not modify the plan yet unless the user explicitly
-   asked for immediate editing. Keep each item to one problem, one reason, and
-   one proposed action.
-3. Build a compact packet with the original objective, essential plan content,
-   constraints, and uncertainties. If the plan is long, include its structure
-   and only the passages needed to evaluate `[CX#]`; do not resend the full plan.
-   Pass Codex suggestions separately.
-4. Invoke the script with `-ReviewType Plan`.
-5. Have reviewers verify each Codex suggestion and identify high-value
-   omissions. They must reference `[CX#]` or label a new issue `NEW`.
-6. Merge duplicates, adjudicate, record reasons, then revise the plan as Codex.
+1. Build a self-contained packet. Reviewers receive no source paths.
+2. For `Plan`, form Codex's opinion privately; do not prime reviewers.
+3. For `Experiment`, include Codex's command/decision timeline, summarized
+   logs, diagnosis, and proposed changes because those are being audited.
+4. Invoke `scripts/Invoke-ResearchRoundtable.ps1`.
+5. Check `roundtable-manifest.json` before adjudication.
+6. Use only valid entries in each normalized review. Inspect raw output when
+   status is `partially_valid` or `invalid`; never promote
+   `UNPARSED_REVIEW_ITEM` to `MUST_FIX` without independent verification.
+7. If isolation failed, exclude that reviewer. If one reviewer failed, label
+   the result `partial`. If both failed, provide Codex self-check only and state
+   that multi-reviewer review failed.
+8. Adjudicate by evidence and problem type, not voting.
+9. Present the decision using `references/decision-template.md`, include the
+   manifest path, then stop at the authorization gate.
 
-Use `references/plan-review-packet-template.md`.
+## Reviewer roles
 
-## Experiment workflow
+- Kimi: engineering feasibility, step completeness, hardware constraints,
+  reproducibility, debugging path, cost, and execution risk.
+- DeepSeek: causal gaps, leakage, statistics, metric mismatch, falsifiability,
+  overstated novelty, controls, and publication viability.
 
-1. Extract the objective, acceptance criteria, required command, and constraints
-   from the research plan.
-2. Run the program as Codex. Preserve the exact command, exit state, decisive
-   metrics, only the shortest diagnostic error excerpts, and relevant change
-   summary. Never send full stdout, stderr, traces, or repeated epochs.
-3. Write Codex's independent diagnosis and next-step proposals with IDs
-   `[CX1]`, `[CX2]`, and so on.
-4. Build a compact evidence packet and pass the diagnosis separately.
-5. Invoke the script with `-ReviewType Experiment`.
-6. Have reviewers check whether the evidence supports the diagnosis and whether
-   every proposed next step is justified.
-7. Merge duplicates and adjudicate, but do not edit code or rerun yet.
-8. Report the decision table, proposed file-level changes, expected benefit,
-   risks, and verification command to the user. Ask whether to execute.
-9. Stop and wait for explicit user approval.
-10. Only after approval, apply the authorized changes as Codex, rerun the
-    command, and compare before/after evidence. If the user rejects or narrows
-    the changes, follow that decision.
+Kimi finding a plan executable does not establish scientific validity.
+DeepSeek finding a logical flaw does not establish engineering infeasibility.
+Classify each finding as `engineering feasibility`, `scientific validity`,
+`statistical validity`, `publication viability`, or `execution risk`; state
+whether a `MUST_FIX` blocks execution, blocks publication, or only affects
+presentation.
 
-Use `references/experiment-review-packet-template.md`. User approval authorizes
-only the presented change set and verification run; obtain approval again for
-any materially different follow-up change.
+## Modes
 
-## Review modes
+- `BudgetLean`: cheapest daily check; preflight plus one most relevant reviewer,
+  `MUST_FIX` only. Never present it as full roundtable coverage.
+- `Lean` (default): every `MUST_FIX`, no optional improvement.
+- `Standard`: every `MUST_FIX` plus all material `RECOMMENDED` findings and a
+  deeper cross-field, reproducibility, and viability audit.
 
-- `Lean` (default): report only `MUST_FIX`; return
-  `NO_MATERIAL_CHANGE` if none exists.
-- `Standard`: report `MUST_FIX` and `RECOMMENDED`, clearly separated.
+Never impose a finding-count cap or shorten raw reviewer output.
 
-Classify by impact, not count. Never omit a must-fix issue for brevity.
+Use `Standard` as the Final Gate before execution, submission, or publication.
+Recheck unresolved `MUST_FIX`, stop conditions, records, reproducibility, and
+failure criteria; inspect raw output when normalized evidence is degraded.
 
-## Token economy
+## Full and Diff scope
 
-- Default to `Lean`; use `Standard` only when the user requests normal review
-  or recommended improvements are decision-relevant.
-- Send each fact once: shared evidence belongs in the packet; Codex conclusions
-  belong in the separate `[CX#]` file.
-- Reviewers report only disagreements, corrections, and omissions. Pure
-  agreement without added value is omitted.
-- Codex reads only final review files, merges duplicates, and summarizes each
-  accepted action once. Do not paste both reviews verbatim into the user reply.
-- Preserve every `MUST_FIX` finding. Save tokens by removing repetition, not
-  by suppressing material criticism.
+- `Full`: first review, major restructuring, changed objective/design/metrics/
+  hardware, or final gate.
+- `Diff`: small revisions only. Use
+  `references/diff-review-packet-template.md`; include the previous summary,
+  unresolved `MUST_FIX`, current diff, intent, and focus questions.
 
-## Invoke reviewers
+Always label Diff output: `Review scope: Diff - changed content and unresolved
+issues only.` If the diff is incomplete or structural change exceeds roughly
+30%, return to Full.
+
+## Cost controls
+
+- Run local preflight first. `PRECHECK_BLOCKED` means no reviewer call.
+- Cache passed isolation tests for 24 hours using CLI, prompt, permissions,
+  sandbox strategy, script version, and user fingerprint.
+- Reuse reviews only on exact hash-key matches; never use similarity matching.
+- For Plan/Procedure, have Codex create one anchor-preserving deduplicated
+  packet. Preserve constraints, hardware, metrics, baselines, labels,
+  statistics, leakage controls, failures, and unresolved `MUST_FIX`.
+- Lean/BudgetLean may pass focused packets with `-KimiPacketPath` and
+  `-DeepSeekPacketPath`; use Full packets for cross-domain questions and
+  Standard when focus would omit decisive evidence.
+- Read manifest, normalized JSONL, and issue ledger by default. Read raw only
+  for invalid/partial/inconsistent output, tool failure, overlong output, user
+  request, or Standard verification of a decisive `MUST_FIX`.
+- Never retry formatting automatically in Lean/BudgetLean.
+
+## Isolation and traceability
+
+The invocation script:
+
+- runs or safely reuses a fingerprinted isolation smoke test;
+- uses a new empty sandbox and deletes it afterward;
+- passes DeepSeek text through stdin and keeps the full Kimi packet out of the
+  process command line by using a random temporary prompt file;
+- saves complete `*.raw.md` and parsed `*.normalized.jsonl` files;
+- validates item IDs, severity, anchor/location, evidence, and action;
+- maintains `roundtable-issue-ledger.jsonl` so unresolved `MUST_FIX` survives
+  Diff rounds and fixed/rejected issues remain traceable;
+- records every cache, compression, focused-packet, skipped-call, and raw-read
+  decision in `roundtable-manifest.json`.
+
+Do not use a reviewer whose isolation test failed. A raw file is evidence, not
+automatically admissible advice.
+
+## Long packets
+
+Never silently truncate. If input exceeds the mode limit, create a compressed
+packet that preserves objectives, source anchors, decisive evidence,
+constraints, contradictions, and acceptance criteria. Pass both
+`-CompressedReviewPacketPath` and `-CompressionStrategy`. The manifest retains
+the original and effective hashes.
+
+## Invocation
 
 ```powershell
 & "<skill-dir>\scripts\Invoke-ResearchRoundtable.ps1" `
-  -ReviewType Plan `
-  -ReviewPacketPath ".roundtable\review-packet.md" `
-  -CodexAdvicePath ".roundtable\codex-first-pass.md" `
-  -UserIdeasPath ".roundtable\user-ideas.md" `
-  -Mode Lean
+  -ReviewType Procedure `
+  -ReviewPacketPath ".roundtable\procedure-packet.md" `
+  -Mode Lean `
+  -ReviewScope Full
 ```
 
-Use `-ReviewType Experiment` for experiments. User ideas are optional. Reviews
-go to `.roundtable/reviews/<timestamp>/`; the terminal prints only their paths.
-
-Before the first Kimi review:
+Use `-ReviewType Plan`, `Procedure`, or `Experiment`. Before first Kimi use:
 
 ```powershell
 & "<skill-dir>\scripts\Initialize-RoundtableKimi.ps1"
 ```
 
-## Adjudicate
+Run local diagnostics without model calls:
 
-Use `references/decision-template.md`. Never accept feedback merely because two
-reviewers agree. Check it against the plan, evidence, cost, and user objective.
+```powershell
+& "<skill-dir>\scripts\Invoke-ResearchRoundtable.ps1" -SelfTest
+```
 
-For experiment work, end the adjudication turn with:
+## Authorization gate
 
-1. accepted, partially accepted, rejected, and deferred findings;
-2. exact files or components proposed for modification;
-3. expected benefit and regression risk;
-4. proposed verification command and success criterion;
-5. a direct request for user authorization.
+Review and execution requests do not authorize post-review changes. Always
+produce a concrete `Pending Change Set` with exact paths, modifications,
+verification commands, risks, and status `pending`. Do not modify a plan,
+procedure, code, configuration, template, or parameter until the user explicitly
+approves that set.
 
-Do not treat the user's original request to review or run an experiment as
-authorization for post-review code changes.
-
-## Guardrails
-
-- Never send secrets, raw private data, weights, full logs, or unnecessary paths.
-- Never load reviewer sessions, caches, stderr, or model reasoning into Codex.
-- Never let reviewer feedback apply changes automatically.
-- Never modify code, configuration, or experiment parameters after adjudication
-  until the user explicitly approves the presented change set.
-- Disclose a failed reviewer instead of inventing its feedback.
+If the user explicitly requests direct modification of an important research
+file, preserve a reversible backup before editing and report its path. Approval
+covers only the presented scope; ask again for materially different work.
