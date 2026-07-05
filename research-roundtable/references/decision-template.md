@@ -1,28 +1,77 @@
-# Codex adjudication record
+# Codex roundtable synthesis
 
-| Reviewer item | Codex item | Level | Decision | Evidence and reason | Action | Verification |
+- Roundtable status: `completed` / `partial` / `failed`
+- Mode: `BudgetLean` / `Lean` / `Standard`
+- Review scope: `Full` / `Diff`
+- Coverage: `single reviewer` / `two reviewers`
+- Manifest path:
+- Issue ledger path:
+- Reviewer exclusions or degraded items:
+
+## Codex independent findings
+
+- `[C1]` Level; category; blocking effect; source anchor; evidence; action.
+
+## Reviewer adjudication
+
+| Source item | Anchor | Category | Blocking effect | Codex decision | Evidence and reason | Final action |
 |---|---|---|---|---|---|---|
 
-Allowed decisions: `accept`, `partially accept`, `reject`, `defer`.
+Categories: `engineering feasibility`, `scientific validity`, `statistical
+validity`, `publication viability`, `execution risk`.
 
-Merge duplicate reviewer findings into one row. Summarize rather than quote
-reviewer prose. Then record:
+Blocking effect: `blocks execution`, `blocks publication`, `presentation only`,
+or `non-blocking improvement`.
 
-- changes applied only by Codex;
-- verification command;
-- before/after evidence;
-- unresolved must-fix issues;
-- whether another review cycle is necessary.
+Decisions: `accept`, `partially accept`, `reject`, `defer`. Weight findings by
+evidence and reviewer specialty, not votes. Lower the weight of unanchored
+items until Codex verifies them. Never treat `UNPARSED_REVIEW_ITEM` as a
+MUST_FIX without independent verification.
 
-## User authorization gate
+## Research viability judgment
 
-- Proposed files or components:
-- Proposed changes:
+- Best-case publication level:
+- Realistic publication level:
+- Minimum viable thesis contribution:
+- Downgrade path:
+- Stop condition:
+- Next experiment priority:
+
+Tie judgments to hardware, data collection, controls, metrics, repeated trials,
+novelty, and the minimum viable result. If evidence is insufficient, state
+exactly what information is missing.
+
+## Integrated final recommendation
+
+- Outcome or direct-execution judgment:
+- Accepted changes:
+- Rejected/deferred changes:
 - Expected benefit:
-- Regression risk:
-- Verification command:
-- Success criterion:
-- Authorization status: `pending` / `approved` / `rejected` / `approved with limits`
+- Risks:
+- Verification and success criteria:
 
-While status is `pending`, do not edit code, configuration, or experiment
-parameters and do not start the post-review verification run.
+# Pending Change Set
+
+## Files to modify
+
+Use exact paths. Write `none` when advice only.
+
+## Exact modifications
+
+## Verification commands
+
+## Risks
+
+## Rollback backup
+
+Required for direct modification of important research files.
+
+## User authorization status: pending
+
+While pending, do not modify research plans, procedures, source files,
+configuration, templates, scripts, or experiment parameters, and do not start
+post-review verification.
+
+For Diff scope, state: `This review only checks changed content and unresolved
+issues.` Read manifest + normalized JSONL + ledger first; open raw only for the
+reasons recorded in the manifest.

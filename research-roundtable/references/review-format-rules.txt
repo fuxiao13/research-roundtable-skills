@@ -1,0 +1,1 @@
+Output one finding per line: [ID] SEVERITY｜anchor/location｜specific evidence｜action. IDs must be unique. Output NO_MATERIAL_CHANGE if none. Do not summarize or praise.
